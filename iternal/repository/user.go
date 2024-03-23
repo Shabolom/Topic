@@ -3,9 +3,10 @@ package repository
 import (
 	"Arkadiy_Servis_authorization/config"
 	"Arkadiy_Servis_authorization/iternal/domain"
+	"Arkadiy_Servis_authorization/iternal/models"
 	"Arkadiy_Servis_authorization/iternal/tools"
-	"fmt"
 	"github.com/gofrs/uuid"
+	uuid2 "github.com/google/uuid"
 	"net/http"
 )
 
@@ -57,34 +58,11 @@ func (ur *UserRepo) FindOnUser(what string, find any) (domain.User, error) {
 	return user, nil
 }
 
-func (ur *UserRepo) JoinTopic(userID uuid.UUID, topicID string) (domain.User, error) {
-	id, _ := uuid.FromString(topicID)
-
-	err := config.DB.
-		Model(&domain.Topic{
-			Base: domain.Base{
-				ID: id,
-			},
-		}).
-		Association("Users").
-		Append(domain.User{
-			Base: domain.Base{
-				ID: userID,
-			},
-		}).
-		Error
-
-	if err != nil {
-		return domain.User{}, err
-	}
-
-	return domain.User{}, nil
-}
-
-func (ur *UserRepo) PostMassage(massage domain.Massage) tools.UserResult {
-
-	err := config.DB.
-		Create(&massage).
+func (ur *UserRepo) ChangeStatus(status string, userID uuid.UUID) tools.UserResult {
+	var user domain.User
+	err := config.DB.Model(&user).
+		Where("id =?", userID).
+		Update("status", status).
 		Error
 
 	if err != nil {
@@ -95,98 +73,83 @@ func (ur *UserRepo) PostMassage(massage domain.Massage) tools.UserResult {
 	}
 
 	return tools.UserResult{
-		Err:    nil,
-		Status: http.StatusOK,
+		Message: "статус изменен",
+		Status:  http.StatusOK,
 	}
 }
 
-func (ur *UserRepo) FindDiz(massageID uuid.UUID, userID uuid.UUID) (domain.Massage, error) {
-	var massage domain.Massage
+func (ur *UserRepo) DeleteUser(userStrID string) tools.UserResult {
+	var user domain.User
+	userID, _ := uuid2.Parse(userStrID)
 
 	err := config.DB.
-		Model(domain.Massage{}).
-		Where("id = ?", massageID).
-		Preload("DizLikes", "user_id IN (?)", userID).
-		Preload("Likes", "user_id IN (?)", userID).
-		//Preload("DizLikes").
-		//Preload("Likes").
-		Find(&massage).
+		Where("id =?", userID).
+		Delete(&user).
 		Error
 
 	if err != nil {
-		return domain.Massage{}, err
+		return tools.UserResult{
+			Err:    err,
+			Status: http.StatusBadRequest,
+		}
 	}
 
-	return massage, nil
+	return tools.UserResult{
+		Message: "пользователь удален",
+		Status:  http.StatusOK,
+	}
 }
 
-func (ur *UserRepo) CreateDizLike(dizLike domain.DizLike) error {
+func (ur *UserRepo) SetPerm(userPerm models.Permissions) tools.UserResult {
+	var user domain.User
 
-	err := config.DB.
-		Create(&dizLike).
-		Error
-
-	return err
-}
-
-func (ur *UserRepo) DeleteDizLike(massageID uuid.UUID) error {
-	var dizLike domain.DizLike
-
-	err := config.DB.
-		Where("massage_id =?", massageID).
-		Delete(&dizLike).
-		Error
-
-	return err
-}
-
-func (ur *UserRepo) CreateLike(like domain.Like) error {
-
-	err := config.DB.
-		Create(&like).
-		Error
-
-	return err
-}
-
-func (ur *UserRepo) DeleteLike(massageID uuid.UUID) error {
-	var like domain.Like
-
-	err := config.DB.
-		Where("massage_id =?", massageID).
-		Delete(&like).
-		Error
-
-	return err
-}
-
-func (ur *UserRepo) FindUserInTopic(topicID uuid.UUID, userID uuid.UUID) error {
-	var topic domain.Topic
-
-	err := config.DB.
-		Model(&domain.Topic{}).
-		Preload("Users", "topic_id IN (?)", topicID).
-		First(&topic).
-		Error
-
-	return err
-}
-
-func (ur *UserRepo) TopicMassages(topicID uuid.UUID) (domain.Topic, error) {
-	var topic domain.Topic
-	fmt.Println(topicID)
-	err := config.DB.
-		Model(&domain.Topic{}).
-		Order("created-at").
-		Preload("Massages", "topic_id IN (?)", topicID).
-		Preload("Massages.Likes").
-		Preload("Massages.DizLikes").
-		Find(&topic).
+	err := config.DB.Model(&user).
+		Where("id =?", userPerm.UserID).
+		Update("permissions", userPerm.Perm).
 		Error
 
 	if err != nil {
-		return domain.Topic{}, err
+		return tools.UserResult{
+			Err:    err,
+			Status: http.StatusBadRequest,
+		}
 	}
 
-	return topic, err
+	return tools.UserResult{
+		Message: "права изменены",
+		Status:  http.StatusOK,
+	}
+}
+
+func (ur *UserRepo) GetUsers(limit, skip int) ([]domain.User, error) {
+	var user []domain.User
+
+	err := config.DB.
+		Order("id asc").
+		Limit(limit).
+		Offset(skip).
+		Find(&user).
+		Error
+
+	if err != nil {
+		return []domain.User{}, err
+	}
+
+	return user, nil
+}
+
+func (ur *UserRepo) GetUser(stringUserID string) (domain.User, error) {
+	var user domain.User
+
+	userID, _ := uuid2.Parse(stringUserID)
+	err := config.DB.
+		Where("id =?", userID).
+		First(&user).
+		Error
+
+	if err != nil {
+		return domain.User{}, err
+	}
+
+	return user, nil
 }

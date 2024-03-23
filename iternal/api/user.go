@@ -6,10 +6,10 @@ import (
 	"Arkadiy_Servis_authorization/iternal/tools"
 	"encoding/json"
 	"github.com/gin-gonic/gin"
-	"github.com/gofrs/uuid"
 	log "github.com/sirupsen/logrus"
 	"io"
 	"net/http"
+	"strconv"
 )
 
 type UserApi struct {
@@ -21,6 +21,17 @@ func NewUserApi() *UserApi {
 
 var userService = service.NewUserService()
 
+// @Summary	регистрация пользователя с выдачей токена
+// @Produce	json
+// @Accept	json
+// @Tags	User
+// @Param	ввод	body		models.Register	true	"ввести логин и пароль"
+// @Success	200		{string}	string	"вы зарегестрировались"
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router	/api/users/register [post]
 func (ua *UserApi) Register(c *gin.Context) {
 	var user models.Register
 
@@ -56,6 +67,17 @@ func (ua *UserApi) Register(c *gin.Context) {
 	defer c.Request.Body.Close()
 }
 
+// @Summary	авторизация пользователя
+// @Produce	json
+// @Accept	json
+// @Tags	User
+// @Param	ввод	body		models.Register	true	"ввести логин и пароль"
+// @Success	200		{string}	string	"вы успешно авторизировались"
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router	/api/users/login [post]
 func (ua *UserApi) Login(c *gin.Context) {
 	var user models.Register
 
@@ -91,7 +113,185 @@ func (ua *UserApi) Login(c *gin.Context) {
 	defer c.Request.Body.Close()
 }
 
+// @Summary	изменение статуса пользователя
+// @Security ApiKeyAuth
+// @Produce	json
+// @Accept	json
+// @Tags	User
+// @Param	ввод	body		models.Status	true	"измените статус"
+// @Success	200		{string}	string	"статус изменен"
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router	/api/users/status [post]
+func (ua *UserApi) ChangeStatus(c *gin.Context) {
+	var status models.Status
+
+	data, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	err = json.Unmarshal(data, &status)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	result := userService.ChangeStatus(status)
+	if result.Err != nil {
+		tools.CreateError(result.Status, result.Err, c)
+		log.WithField("component", "rest").Warn(result.Err)
+		return
+	}
+
+	c.JSON(result.Status, result.Message)
+	defer c.Request.Body.Close()
+}
+
+// @Summary	удаление пользователя
+// @Security ApiKeyAuth
+// @Produce	json
+// @Accept	json
+// @Tags	User
+// @Param	user_id	query    	string	true	"введите id_user"
+// @Success	200		{string}	string	"пользователь удален"
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router /api/users/delete [delete]
+func (ua *UserApi) DeleteUser(c *gin.Context) {
+	userID := c.Query("user_id")
+
+	result := userService.DeleteUser(userID)
+	if result.Err != nil {
+		tools.CreateError(result.Status, result.Err, c)
+		log.WithField("component", "rest").Warn(result.Err)
+		return
+	}
+	c.JSON(result.Status, result.Message)
+	defer c.Request.Body.Close()
+}
+
+// @Summary	выдача прав
+// @Security ApiKeyAuth
+// @Produce	json
+// @Accept	json
+// @Tags	User
+// @Param	ввод	body		models.Permissions	true	"выдайте права от 0 до 3"
+// @Success	200		{string}	string	"права выданы"
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router /api/users/permission [post]
+func (ua *UserApi) SetPerm(c *gin.Context) {
+	var perm models.Permissions
+
+	data, err := io.ReadAll(c.Request.Body)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	err = json.Unmarshal(data, &perm)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	result := userService.SetPerm(perm)
+	if result.Err != nil {
+		tools.CreateError(result.Status, result.Err, c)
+		log.WithField("component", "rest").Warn(result.Err)
+		return
+	}
+
+	c.JSON(result.Status, result.Message)
+	defer c.Request.Body.Close()
+}
+
+// @Summary	выдача прав
+// @Security ApiKeyAuth
+// @Produce	json
+// @Accept	json
+// @Tags	User
+// @Param	page	query		string	true	"страница"
+// @Param	limit	query		string	true	"количество строк"
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router	/api/users/get [get]
+func (ua *UserApi) GetUsers(c *gin.Context) {
+
+	page, err := strconv.Atoi(c.Query("page"))
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	limit, err := strconv.Atoi(c.Query("limit"))
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	result, err := userService.GetUsers(page, limit)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+	defer c.Request.Body.Close()
+}
+
+// @Summary	выдача прав
+// @Security ApiKeyAuth
+// @Produce	json
+// @Accept	json
+// @Tags	User
+// @Param	id	path		string	true	"user_id"
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router	/api/users/get/{id} [post]
 func (ua *UserApi) GetUser(c *gin.Context) {
+	userID := c.Param("id")
+
+	result, err := userService.GetUser(userID)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+	defer c.Request.Body.Close()
+}
+
+// @Summary	выдача прав
+// @Security ApiKeyAuth
+// @Produce	json
+// @Tags	User
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router	/api/users/get [get]
+func (ua *UserApi) GetUserSelf(c *gin.Context) {
 	claims, err := tools.ParsTokenClaims(c.Request.Header.Get("Authorization"))
 	if err != nil {
 		tools.CreateError(http.StatusBadRequest, err, c)
@@ -99,113 +299,7 @@ func (ua *UserApi) GetUser(c *gin.Context) {
 		return
 	}
 
-	result := userService.GetUser(claims.UserID)
-	if result.Err != nil {
-		tools.CreateError(result.Status, result.Err, c)
-		log.WithField("component", "rest").Warn(result.Err)
-		return
-	}
-
-	c.JSON(result.Status, result.Result)
-	defer c.Request.Body.Close()
-}
-
-func (ua *UserApi) JoinTopic(c *gin.Context) {
-	topicID := c.Query("topic_id")
-
-	claims, err := tools.ParsTokenClaims(c.Request.Header.Get("Authorization"))
-	if err != nil {
-		tools.CreateError(http.StatusBadRequest, err, c)
-		log.WithField("component", "rest").Warn(err)
-		return
-	}
-
-	result := userService.JoinTopic(claims.UserID, topicID)
-
-	c.Status(result.Status)
-	defer c.Request.Body.Close()
-}
-
-func (ua *UserApi) PostMassage(c *gin.Context) {
-	var massage models.Massage
-
-	massDirPath, topicID, claims, err := tools.MultipartFormDataMassage(&massage, c)
-	if err != nil {
-		tools.CreateError(http.StatusBadRequest, err, c)
-		log.WithField("component", "rest").Warn(err)
-		return
-	}
-
-	result := userService.PostMassage(massage, massDirPath, claims, topicID)
-	if result.Err != nil {
-		tools.CreateError(result.Status, result.Err, c)
-		log.WithField("component", "rest").Warn(result.Err)
-		return
-	}
-
-	c.Status(result.Status)
-	defer c.Request.Body.Close()
-}
-
-func (ua *UserApi) DizLike(c *gin.Context) {
-
-	massageID := c.Query("massage_id")
-	uuidMassage, err := uuid.FromString(massageID)
-
-	claims, err := tools.ParsTokenClaims(c.Request.Header.Get("Authorization"))
-	if err != nil {
-		tools.CreateError(http.StatusBadRequest, err, c)
-		log.WithField("component", "rest").Warn(err)
-		return
-	}
-
-	err, dizLikes := userService.DizLike(claims, uuidMassage)
-	if err != nil {
-		tools.CreateError(http.StatusBadRequest, err, c)
-		log.WithField("component", "rest").Warn(err)
-		return
-	}
-
-	c.JSON(http.StatusOK, dizLikes)
-	defer c.Request.Body.Close()
-}
-
-func (ua *UserApi) Like(c *gin.Context) {
-
-	massageID := c.Query("massage_id")
-	uuidMassage, err := uuid.FromString(massageID)
-
-	claims, err := tools.ParsTokenClaims(c.Request.Header.Get("Authorization"))
-	if err != nil {
-		tools.CreateError(http.StatusBadRequest, err, c)
-		log.WithField("component", "rest").Warn(err)
-		return
-	}
-
-	err, likes := userService.Like(claims, uuidMassage)
-	if err != nil {
-		tools.CreateError(http.StatusBadRequest, err, c)
-		log.WithField("component", "rest").Warn(err)
-		return
-	}
-
-	c.JSON(http.StatusOK, likes)
-	defer c.Request.Body.Close()
-}
-
-func (ua *UserApi) TopicMassages(c *gin.Context) {
-
-	topicID := c.Query("topic_id")
-	uuidMassage, err := uuid.FromString(topicID)
-
-	claims, err := tools.ParsTokenClaims(c.Request.Header.Get("Authorization"))
-	if err != nil {
-		tools.CreateError(http.StatusBadRequest, err, c)
-		log.WithField("component", "rest").Warn(err)
-		return
-	}
-
-	result, err := userService.TopicMassages(uuidMassage, claims.UserID)
+	result, err := userService.GetUser(claims.UserID.String())
 	if err != nil {
 		tools.CreateError(http.StatusBadRequest, err, c)
 		log.WithField("component", "rest").Warn(err)

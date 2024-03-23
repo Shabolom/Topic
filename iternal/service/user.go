@@ -6,10 +6,8 @@ import (
 	"Arkadiy_Servis_authorization/iternal/repository"
 	"Arkadiy_Servis_authorization/iternal/tools"
 	"errors"
-	"fmt"
 	"github.com/gofrs/uuid"
 	"net/http"
-	"strings"
 )
 
 type UserService struct {
@@ -70,174 +68,52 @@ func (us *UserService) Login(user models.Register) tools.UserResult {
 	}
 }
 
-func (us *UserService) GetUser(userID uuid.UUID) tools.UserResult {
+func (us *UserService) ChangeStatus(status models.Status) tools.UserResult {
 
-	result, err := userRepo.FindOnUser("id", userID)
-	if err != nil {
-		return tools.UserResult{
-			Err:    err,
-			Status: http.StatusBadRequest,
-		}
+	if status.Confirm {
+		result := userRepo.ChangeStatus("confirm", status.UserID)
+		return result
 	}
 
-	return tools.UserResult{
-		Status: http.StatusOK,
-		Result: result,
-	}
-}
-
-func (us *UserService) JoinTopic(userID uuid.UUID, topicID string) tools.UserResult {
-
-	result, err := userRepo.JoinTopic(userID, topicID)
-	if err != nil {
-		return tools.UserResult{
-			Err:    err,
-			Status: http.StatusBadRequest,
-		}
-	}
-
-	return tools.UserResult{
-		Status: http.StatusOK,
-		Result: result,
-	}
-}
-
-func (us *UserService) PostMassage(massage models.Massage, massPaths []string, claims tools.Claims, topicID string) tools.UserResult {
-	massageId, _ := uuid.NewV4()
-	topicUUID, _ := uuid.FromString(topicID)
-	formatPaths := strings.Join(massPaths, "(space)")
-	fmt.Println(formatPaths)
-	userMassageEntity := domain.Massage{
-		TopicID:      topicUUID,
-		Text:         massage.Text,
-		UserFilePath: formatPaths,
-		UserID:       claims.UserID,
-	}
-	userMassageEntity.ID = massageId
-
-	result := userRepo.PostMassage(userMassageEntity)
-
+	result := userRepo.ChangeStatus("not confirm", status.UserID)
 	return result
 }
 
-func (us *UserService) DizLike(claims tools.Claims, massageID uuid.UUID) (error, int) {
-
-	dizID, _ := uuid.NewV4()
-	dizLikeEntity := domain.DizLike{
-		MassageID: massageID,
-		UserID:    claims.UserID,
-	}
-	dizLikeEntity.ID = dizID
-
-	result, err := userRepo.FindDiz(massageID, claims.UserID)
-	if err != nil {
-		return err, 0
-	}
-
-	if len(result.DizLikes) == 0 && len(result.Likes) == 0 {
-
-		err2 := userRepo.CreateDizLike(dizLikeEntity)
-		if err2 != nil {
-			return err2, len(result.DizLikes)
-		}
-		return nil, len(result.DizLikes)
-	} else if len(result.DizLikes) == 1 && len(result.Likes) == 0 {
-
-		err2 := userRepo.DeleteDizLike(massageID)
-		if err2 != nil {
-			return err2, len(result.DizLikes)
-		}
-		return nil, len(result.DizLikes)
-	} else if len(result.DizLikes) == 0 && len(result.Likes) == 1 {
-
-		err2 := userRepo.DeleteLike(massageID)
-		if err2 != nil {
-			return err2, len(result.DizLikes)
-		}
-
-		err2 = userRepo.CreateDizLike(dizLikeEntity)
-		if err2 != nil {
-			return err2, len(result.DizLikes)
-		}
-
-		return nil, len(result.DizLikes)
-	}
-
-	return errors.New("как-то занесли и лайк и диз лайк что не возможно"), 0
+func (us *UserService) DeleteUser(userID string) tools.UserResult {
+	result := userRepo.DeleteUser(userID)
+	return result
 }
 
-func (us *UserService) Like(claims tools.Claims, massageID uuid.UUID) (error, int) {
-
-	dizID, _ := uuid.NewV4()
-	likeEntity := domain.Like{
-		MassageID: massageID,
-		UserID:    claims.UserID,
+func (us *UserService) SetPerm(userPerm models.Permissions) tools.UserResult {
+	if userPerm.Perm > 3 || userPerm.Perm < 0 {
+		return tools.UserResult{
+			Message: "введите права доступа от 0 до 3",
+			Status:  http.StatusBadRequest,
+		}
 	}
-	likeEntity.ID = dizID
-
-	result, err := userRepo.FindDiz(massageID, claims.UserID)
-	if err != nil {
-		return err, 0
-	}
-
-	if len(result.DizLikes) == 0 && len(result.Likes) == 0 {
-
-		err2 := userRepo.CreateLike(likeEntity)
-		if err2 != nil {
-			return err2, len(result.Likes)
-		}
-		return nil, len(result.Likes)
-	} else if len(result.DizLikes) == 0 && len(result.Likes) == 1 {
-
-		err2 := userRepo.DeleteLike(massageID)
-		if err2 != nil {
-			return err2, len(result.Likes)
-		}
-		return nil, len(result.Likes)
-	} else if len(result.DizLikes) == 1 && len(result.Likes) == 0 {
-
-		err2 := userRepo.DeleteDizLike(massageID)
-		if err2 != nil {
-			return err2, len(result.Likes)
-		}
-
-		err2 = userRepo.CreateLike(likeEntity)
-		if err2 != nil {
-			return err2, len(result.Likes)
-		}
-
-		return nil, len(result.Likes)
-	}
-
-	return errors.New("как-то занесли и лайк и диз лайк что не возможно"), 0
+	result := userRepo.SetPerm(userPerm)
+	return result
 }
 
-func (us *UserService) TopicMassages(topicID uuid.UUID, userID uuid.UUID) ([]models.RespMassage, error) {
-	var respMassages []models.RespMassage
+func (us *UserService) GetUsers(page, limit int) ([]domain.User, error) {
+	skip := page*limit - limit
 
-	err := userRepo.FindUserInTopic(topicID, userID)
+	if page == 0 || limit == 0 {
+		return []domain.User{}, errors.New("задайте необходимое количество элементов и страниц в param")
+	}
+
+	result, err := userRepo.GetUsers(limit, skip)
 	if err != nil {
-		return []models.RespMassage{}, err
+		return []domain.User{}, err
 	}
+	return result, nil
+}
 
-	result, err := userRepo.TopicMassages(topicID)
-
-	for _, massage := range result.Massages {
-		paths := strings.Split(massage.UserFilePath, "(space)")
-
-		respMassageEntity := models.RespMassage{
-			Text:      massage.Text,
-			FilesPath: paths,
-			UserID:    massage.UserID,
-			Likes:     len(massage.Likes),
-			DizLikes:  len(massage.DizLikes),
-		}
-		respMassages = append(respMassages, respMassageEntity)
-	}
-
+func (us *UserService) GetUser(userID string) (domain.User, error) {
+	result, err := userRepo.GetUser(userID)
 	if err != nil {
-		return []models.RespMassage{}, err
+		return domain.User{}, err
 	}
 
-	return respMassages, nil
+	return result, nil
 }

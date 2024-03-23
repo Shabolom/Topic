@@ -1,0 +1,538 @@
+definitions:
+  models.Error:
+    properties:
+      code:
+        type: integer
+      error:
+        type: string
+    type: object
+  models.Permissions:
+    properties:
+      perm:
+        type: integer
+      userID:
+        type: string
+    type: object
+  models.Register:
+    properties:
+      login:
+        type: string
+      password:
+        type: string
+    type: object
+  models.ResponseTopic:
+    properties:
+      about:
+        type: string
+      creator:
+        type: string
+      name:
+        type: string
+      users:
+        type: integer
+    type: object
+  models.Status:
+    properties:
+      confirm:
+        type: boolean
+      userID:
+        type: string
+    type: object
+host: localhost:8000
+info:
+  contact:
+    email: tima.gorenskiy@mail.ru
+    url: тут моя контактная информация (https://vk.com/id192672036)
+  description: Это выпускной проэкт с использованием свагера
+  termsOfService: сдесь были бы условия использования еслиб я их мог обозначить
+  title: User API
+  version: 1.0.0
+paths:
+  /api/massages/rating/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: введите id сообщения
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: введите 1 если лайк 0 если диз лайк
+        in: query
+        name: rating
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: int
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: поставить дизлайк
+      tags:
+      - Massages
+  /api/massages/topic/{id}:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: id сообщения
+        in: path
+        name: id
+        required: true
+        type: string
+      - in: query
+        name: text
+        type: string
+      - description: ввести сообщение
+        in: formData
+        name: file
+        type: file
+      responses:
+        "200":
+          description: "200"
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: отправка сообщения в определенный топик
+      tags:
+      - Massages
+  /api/topics:
+    get:
+      consumes:
+      - application/json
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ResponseTopic'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: получение топиков
+      tags:
+      - Topic
+  /api/topics/{id}:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: id топика
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: int
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: получение сообщений в конкретном топике
+      tags:
+      - Topic
+  /api/topics/create:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - in: query
+        name: about
+        type: string
+      - in: query
+        name: creator
+        type: string
+      - in: query
+        name: name
+        type: string
+      - description: файл
+        in: formData
+        name: file
+        type: file
+      responses:
+        "200":
+          description: топик создан
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: присоединение к топику
+      tags:
+      - Topic
+  /api/topics/join:
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: id топика
+        in: query
+        name: topic_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: int
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: присоединение к топику
+      tags:
+      - Topic
+  /api/users/delete:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: введите id_user
+        in: query
+        name: user_id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: пользователь удален
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: удаление пользователя
+      tags:
+      - User
+  /api/users/get:
+    get:
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: выдача прав
+      tags:
+      - User
+  /api/users/get/{id}:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: user_id
+        in: path
+        name: id
+        required: true
+        type: string
+      produces:
+      - application/json
+      responses:
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: выдача прав
+      tags:
+      - User
+  /api/users/login:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ввести логин и пароль
+        in: body
+        name: ввод
+        required: true
+        schema:
+          $ref: '#/definitions/models.Register'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: вы успешно авторизировались
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      summary: авторизация пользователя
+      tags:
+      - User
+  /api/users/permission:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: выдайте права от 0 до 3
+        in: body
+        name: ввод
+        required: true
+        schema:
+          $ref: '#/definitions/models.Permissions'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: права выданы
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: выдача прав
+      tags:
+      - User
+  /api/users/register:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: ввести логин и пароль
+        in: body
+        name: ввод
+        required: true
+        schema:
+          $ref: '#/definitions/models.Register'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: вы зарегестрировались
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      summary: регистрация пользователя с выдачей токена
+      tags:
+      - User
+  /api/users/status:
+    post:
+      consumes:
+      - application/json
+      parameters:
+      - description: измените статус
+        in: body
+        name: ввод
+        required: true
+        schema:
+          $ref: '#/definitions/models.Status'
+      produces:
+      - application/json
+      responses:
+        "200":
+          description: статус изменен
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: изменение статуса пользователя
+      tags:
+      - User
+securityDefinitions:
+  ApiKeyAuth:
+    in: header
+    name: Authorization
+    type: apiKey
+swagger: "2.0"
