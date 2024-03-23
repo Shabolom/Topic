@@ -78,7 +78,7 @@ func MultipartFormDataTopic(topic *models.Topic, c *gin.Context) (string, error)
 func MultipartFormDataMassage(massage *models.Massage, c *gin.Context) ([]string, string, Claims, error) {
 	var massDirPath []string
 
-	topicID := c.Query("topic_id")
+	topicID := c.Param("id")
 
 	claims, err := ParsTokenClaims(c.Request.Header.Get("Authorization"))
 	if err != nil {
