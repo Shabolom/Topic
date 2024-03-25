@@ -31,25 +31,32 @@ func SetupRouter() *gin.Engine {
 	r.POST("/api/users/login", user.Login)
 
 	{
-		authRequired.POST("/api/massages/topic/:id", massages.PostMassage)
-		authRequired.GET("/api/massages/rating/:id", massages.Rating)
+		authRequired.GET("/api/messages/topic/:id", topic.TopicMassages)
+		authRequired.POST("/api/messages/topic/:id", massages.Post)
+		authRequired.DELETE("/api/messages/:id", massages.Delete)
+		authRequired.GET("/api/messages/rating/:id", massages.Rating)
 
-		authRequired.GET("/api/users/get", user.GetUserSelf)
+		authRequired.GET("/api/users", user.GetUserSelf)
 
-		authRequired.GET("/api/topics/join", topic.JoinTopic)
-		authRequired.GET("/api/topics", topic.Topics)
-		authRequired.GET("/api/topics/:id", topic.TopicMassages)
+		authRequired.GET("/api/topics", topic.GetTopics)
+		authRequired.GET("/api/topics/:id", topic.GetTopic)
+		authRequired.GET("/api/topics/join/:id", topic.JoinTopic)
 		//authRequired.GET("/api/topics/massages/:topic_id", topic.TopicMassages)
 	}
 
 	{
 		authRequiredAdmin.POST("/api/users/status", user.ChangeStatus)
-		authRequiredAdmin.DELETE("api/users/delete", user.DeleteUser)
+		authRequiredAdmin.DELETE("api/users/:id", user.DeleteUser)
 		authRequiredAdmin.POST("api/users/permissions", user.SetPerm)
-		authRequiredAdmin.GET("/api/users/get_all", user.GetUsers)
-		authRequiredAdmin.GET("/api/users/get/:id", user.GetUser)
+		authRequiredAdmin.GET("/api/users/all", user.GetUsers)
+		authRequiredAdmin.GET("/api/users/:id", user.GetUser)
 
-		authRequiredAdmin.POST("/api/topics/create", topic.CreateTopic)
+		authRequiredAdmin.DELETE("/api/messages/users_message/:id", massages.Delete)
+
+		authRequiredAdmin.POST("/api/topics", topic.CreateTopic)
+		authRequiredAdmin.DELETE("/api/topics/:id", topic.DeleteTopic)
+		authRequiredAdmin.PUT("/api/topics/:id", topic.ChangeTopic)
+		authRequiredAdmin.DELETE("/api/topics/:id/user/:user_id", topic.DeleteUser)
 	}
 
 	return r

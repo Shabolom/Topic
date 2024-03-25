@@ -48,6 +48,42 @@ info:
   title: User API
   version: 1.0.0
 paths:
+  /api/massages/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: введите id сообщения
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: int
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: удаление сообщения
+      tags:
+      - Massages
   /api/massages/rating/{id}:
     get:
       consumes:
@@ -132,39 +168,7 @@ paths:
       summary: отправка сообщения в определенный топик
       tags:
       - Massages
-  /api/topics:
-    get:
-      consumes:
-      - application/json
-      responses:
-        "200":
-          description: OK
-          schema:
-            items:
-              $ref: '#/definitions/models.ResponseTopic'
-            type: array
-        "400":
-          description: Bad Request
-          schema:
-            $ref: '#/definitions/models.Error'
-        "404":
-          description: Not Found
-          schema:
-            $ref: '#/definitions/models.Error'
-        "409":
-          description: Conflict
-          schema:
-            $ref: '#/definitions/models.Error'
-        "500":
-          description: Internal Server Error
-          schema:
-            $ref: '#/definitions/models.Error'
-      security:
-      - ApiKeyAuth: []
-      summary: получение топиков
-      tags:
-      - Topic
-  /api/topics/{id}:
+  /api/messages/topic/{id}:
     get:
       consumes:
       - application/json
@@ -172,6 +176,16 @@ paths:
       - description: id топика
         in: path
         name: id
+        required: true
+        type: string
+      - description: страница
+        in: query
+        name: page
+        required: true
+        type: string
+      - description: колличество элементов на странице
+        in: query
+        name: limit
         required: true
         type: string
       responses:
@@ -200,8 +214,86 @@ paths:
       summary: получение сообщений в конкретном топике
       tags:
       - Topic
-  /api/topics/create:
+  /api/messages/users_message/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: введите id сообщения
+        in: path
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: int
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: удаление сообщения
+      tags:
+      - Massages
+  /api/topics:
     get:
+      consumes:
+      - application/json
+      parameters:
+      - description: количество страниц
+        in: query
+        name: page
+        required: true
+        type: string
+      - description: количество элементов на странице
+        in: query
+        name: limit
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            items:
+              $ref: '#/definitions/models.ResponseTopic'
+            type: array
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: получение топиков
+      tags:
+      - Topic
+    post:
       consumes:
       - application/json
       parameters:
@@ -241,17 +333,136 @@ paths:
             $ref: '#/definitions/models.Error'
       security:
       - ApiKeyAuth: []
-      summary: присоединение к топику
+      summary: создание топика
       tags:
       - Topic
-  /api/topics/join:
+  /api/topics/{id}:
+    delete:
+      consumes:
+      - application/json
+      parameters:
+      - description: id
+        in: query
+        name: id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: топик удален
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: удаление топика
+      tags:
+      - Topic
+    get:
+      consumes:
+      - application/json
+      parameters:
+      - description: id
+        in: path
+        name: id
+        required: true
+        type: string
+      - description: user_id
+        in: path
+        name: user_id
+        required: true
+        type: string
+      responses:
+        "200":
+          description: OK
+          schema:
+            type: int
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: удаление пользователя из топмка
+      tags:
+      - Topic
+    put:
+      consumes:
+      - application/json
+      parameters:
+      - in: query
+        name: about
+        type: string
+      - in: query
+        name: creator
+        type: string
+      - in: query
+        name: name
+        type: string
+      - description: файл
+        in: formData
+        name: file
+        type: file
+      responses:
+        "200":
+          description: топик обновлен
+          schema:
+            type: string
+        "400":
+          description: Bad Request
+          schema:
+            $ref: '#/definitions/models.Error'
+        "404":
+          description: Not Found
+          schema:
+            $ref: '#/definitions/models.Error'
+        "409":
+          description: Conflict
+          schema:
+            $ref: '#/definitions/models.Error'
+        "500":
+          description: Internal Server Error
+          schema:
+            $ref: '#/definitions/models.Error'
+      security:
+      - ApiKeyAuth: []
+      summary: изменение топика
+      tags:
+      - Topic
+  /api/topics/join/{id}:
     get:
       consumes:
       - application/json
       parameters:
       - description: id топика
-        in: query
-        name: topic_id
+        in: path
+        name: id
         required: true
         type: string
       responses:

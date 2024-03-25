@@ -32,7 +32,7 @@ var massagesService = service.NewServiceMassages()
 // @Failure	404			{object}	models.Error
 // @Failure	409			{object}	models.Error
 // @Router	/api/massages/topic/{id} [post]
-func (ma *MassagesAPI) PostMassage(c *gin.Context) {
+func (ma *MassagesAPI) Post(c *gin.Context) {
 	var massage models.Massage
 
 	massDirPath, topicID, claims, err := tools.MultipartFormDataMassage(&massage, c)
@@ -42,7 +42,7 @@ func (ma *MassagesAPI) PostMassage(c *gin.Context) {
 		return
 	}
 
-	result := massagesService.PostMassage(massage, massDirPath, claims, topicID)
+	result := massagesService.Post(massage, massDirPath, claims, topicID)
 	if result.Err != nil {
 		tools.CreateError(result.Status, result.Err, c)
 		log.WithField("component", "rest").Warn(result.Err)
@@ -67,11 +67,19 @@ func (ma *MassagesAPI) PostMassage(c *gin.Context) {
 // @Router	/api/massages/rating/{id} [get]
 func (ma *MassagesAPI) Rating(c *gin.Context) {
 
-	massageID := c.Param("id")
-	rating := c.Query("rating")
+	massageID, err := uuid.FromString(c.Param("id"))
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
 
-	ratingInt, _ := strconv.Atoi(rating)
-	uuidMassage, err := uuid.FromString(massageID)
+	rating, err := strconv.Atoi(c.Query("rating"))
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
 
 	claims, err := tools.ParsTokenClaims(c.Request.Header.Get("Authorization"))
 	if err != nil {
@@ -80,9 +88,9 @@ func (ma *MassagesAPI) Rating(c *gin.Context) {
 		return
 	}
 
-	if ratingInt == 1 {
+	if rating == 1 {
 
-		err2, likes := massagesService.Like(claims, uuidMassage)
+		err2, likes := massagesService.Like(claims, massageID)
 		if err2 != nil {
 			tools.CreateError(http.StatusBadRequest, err2, c)
 			log.WithField("component", "rest").Warn(err2)
@@ -93,7 +101,7 @@ func (ma *MassagesAPI) Rating(c *gin.Context) {
 		defer c.Request.Body.Close()
 	}
 
-	err, dizLikes := massagesService.DizLike(claims, uuidMassage)
+	err, dizLikes := massagesService.DizLike(claims, massageID)
 	if err != nil {
 		tools.CreateError(http.StatusBadRequest, err, c)
 		log.WithField("component", "rest").Warn(err)
@@ -101,5 +109,49 @@ func (ma *MassagesAPI) Rating(c *gin.Context) {
 	}
 
 	c.JSON(http.StatusOK, dizLikes)
+	defer c.Request.Body.Close()
+}
+
+// @Summary	удаление сообщения
+// @Security ApiKeyAuth
+// @Accept	json
+// @Tags	Massages
+// @Param	id		path		string	true	"введите id сообщения"
+// @Success	200		{int}		int
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router	/api/massages/{id} [delete]
+// @Router  /api/messages/users_message/{id} [delete]
+func (ma *MassagesAPI) Delete(c *gin.Context) {
+	id := c.Param("id")
+
+	claims, err := tools.ParsTokenClaims(c.Request.Header.Get("Authorization"))
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	if claims.UserPerm == 3 {
+		err := massagesService.Delete(id, claims)
+		if err != nil {
+			tools.CreateError(http.StatusBadRequest, err, c)
+			log.WithField("component", "rest").Warn(err)
+			return
+		}
+		c.Status(http.StatusOK)
+		return
+	}
+
+	err = massagesService.Delete(id, claims)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	c.Status(http.StatusOK)
 	defer c.Request.Body.Close()
 }

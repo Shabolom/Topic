@@ -7,7 +7,6 @@ import (
 	"Arkadiy_Servis_authorization/iternal/tools"
 	"errors"
 	"github.com/gofrs/uuid"
-	"net/http"
 	"strings"
 )
 
@@ -20,7 +19,7 @@ func NewServiceMassages() *ServiceMassages {
 
 var massageRepo = repository.NewMassagesRepo()
 
-func (sm *ServiceMassages) PostMassage(massage models.Massage, massPaths []string, claims tools.Claims, topicID string) tools.UserResult {
+func (sm *ServiceMassages) Post(massage models.Massage, massPaths []string, claims tools.Claims, topicID string) tools.UserResult {
 	massageId, _ := uuid.NewV4()
 	topicUUID, _ := uuid.FromString(topicID)
 	formatPaths := strings.Join(massPaths, "(space)")
@@ -33,7 +32,7 @@ func (sm *ServiceMassages) PostMassage(massage models.Massage, massPaths []strin
 	}
 	userMassageEntity.ID = massageId
 
-	result := massageRepo.PostMassage(userMassageEntity)
+	result := massageRepo.Post(userMassageEntity)
 
 	return result
 }
@@ -66,37 +65,6 @@ func (sm *ServiceMassages) TopicMassages(topicID uuid.UUID, userID uuid.UUID) ([
 	}
 
 	return respMassages, nil
-}
-
-func (sm *ServiceMassages) JoinTopic(userID uuid.UUID, topicID string) tools.UserResult {
-
-	result, err := massageRepo.JoinTopic(userID, topicID)
-	if err != nil {
-		return tools.UserResult{
-			Err:    err,
-			Status: http.StatusBadRequest,
-		}
-	}
-
-	return tools.UserResult{
-		Status: http.StatusOK,
-		Result: result,
-	}
-}
-
-func (sm *ServiceMassages) CreateTopic(topic models.Topic, path string) tools.UserResult {
-	topicID, _ := uuid.NewV4()
-	topicEntity := domain.Topic{
-		TopicName:   topic.Name,
-		About:       topic.About,
-		Creator:     topic.Creator,
-		PathToPhoto: path,
-	}
-	topicEntity.ID = topicID
-
-	result := massageRepo.CreateTopic(topicEntity)
-
-	return result
 }
 
 func (sm *ServiceMassages) DizLike(claims tools.Claims, massageID uuid.UUID) (error, int) {
@@ -147,7 +115,6 @@ func (sm *ServiceMassages) DizLike(claims tools.Claims, massageID uuid.UUID) (er
 	return errors.New("как-то занесли и лайк и диз лайк что не возможно"), 0
 }
 
-
 func (sm *ServiceMassages) Like(claims tools.Claims, massageID uuid.UUID) (error, int) {
 
 	dizID, _ := uuid.NewV4()
@@ -192,4 +159,14 @@ func (sm *ServiceMassages) Like(claims tools.Claims, massageID uuid.UUID) (error
 	}
 
 	return errors.New("как-то занесли и лайк и диз лайк что не возможно"), 0
+}
+
+func (sm *ServiceMassages) Delete(massageID string, claims tools.Claims) error {
+
+	err := massageRepo.Delete(massageID, claims)
+	if err != nil {
+		return err
+	}
+
+	return nil
 }
