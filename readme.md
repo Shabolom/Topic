@@ -178,12 +178,12 @@ if err = r.Run(Host + ":" + Port); err != nil {
   ![](https://cdn.discordapp.com/attachments/587227868145385502/1221882758104748172/image.png?ex=661431ff&is=6601bcff&hm=a8ae4dbad90b80c88aa82f34696f8053ed6c1a31be27a4b358ceba18cdbe1969&)
      
   ```go
-      authRequired.GET("/api/topics", topic.GetTopics)
+  authRequired.GET("/api/topics", topic.GetTopics)
      ```
     >**Получение информации топике** 
        
     ```go
-        authRequired.GET("/api/topics/:id", topic.GetTopic)
+  authRequired.GET("/api/topics/:id", topic.GetTopic)
     ```
     >**Подключение к топику** : необходимо передать в uri запроса id топика к которому хочет подключится пользователь. 
        
