@@ -181,9 +181,10 @@ if err = r.Run(Host + ":" + Port); err != nil {
     authRequired.GET("/api/topics", topic.GetTopics)
    ```
   >**Получение информации топике** 
-     ```go
+     
+```go
     authRequired.GET("/api/topics/:id", topic.GetTopic)
-    ```
+```
   >**Подключение к топику** : необходимо передать в uri запроса id топика к которому хочет подключится пользователь. 
      
 ```go
