@@ -195,7 +195,7 @@ func (ta *TopicAPI) DeleteTopic(c *gin.Context) {
 // @Router	/api/topics/{id} [put]
 func (ta *TopicAPI) ChangeTopic(c *gin.Context) {
 	var topic models.Topic
-	id := c.Query("name")
+	id := c.Param("id")
 
 	pathToLogo, err := tools.MultipartFormDataTopic(&topic, c)
 	if err != nil {

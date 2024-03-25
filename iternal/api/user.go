@@ -124,7 +124,7 @@ func (ua *UserApi) Login(c *gin.Context) {
 // @Failure	500		{object}	models.Error
 // @Failure	404		{object}	models.Error
 // @Failure	409		{object}	models.Error
-// @Router	/api/users/status [post]
+// @Router	/api/users/status [put]
 func (ua *UserApi) ChangeStatus(c *gin.Context) {
 	var status models.Status
 
@@ -189,7 +189,7 @@ func (ua *UserApi) DeleteUser(c *gin.Context) {
 // @Failure	500		{object}	models.Error
 // @Failure	404		{object}	models.Error
 // @Failure	409		{object}	models.Error
-// @Router /api/users/permission [post]
+// @Router /api/users/permission [put]
 func (ua *UserApi) SetPerm(c *gin.Context) {
 	var perm models.Permissions
 
