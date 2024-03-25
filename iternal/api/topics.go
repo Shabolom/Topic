@@ -23,15 +23,23 @@ var topicService = service.NewTopicService()
 // @Security ApiKeyAuth
 // @Accept	json
 // @Tags	Topic
+// @Param	page		query		string	true	"количество страниц"
+// @Param	limit		query		string	true	"количество элементов на странице"
 // @Success	200		{object}	[]models.ResponseTopic
 // @Failure	400		{object}	models.Error
 // @Failure	500		{object}	models.Error
 // @Failure	404		{object}	models.Error
 // @Failure	409		{object}	models.Error
 // @Router	/api/topics [get]
-func (ta *TopicAPI) Topics(c *gin.Context) {
+func (ta *TopicAPI) GetTopics(c *gin.Context) {
+	page, limit, err := tools.GetQueryPagination(c)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
 
-	result, err := topicService.Topics()
+	result, err := topicService.GetTopics(page, limit)
 	if err != nil {
 		tools.CreateError(http.StatusBadRequest, err, c)
 		log.WithField("component", "rest").Warn(err)
@@ -47,16 +55,28 @@ func (ta *TopicAPI) Topics(c *gin.Context) {
 // @Accept	json
 // @Tags	Topic
 // @Param	id		path		string	true	"id топика"
+// @Param	page	query		string	true	"страница"
+// @Param	limit	query		string	true	"колличество элементов на странице"
 // @Success	200		{int}		int
 // @Failure	400		{object}	models.Error
 // @Failure	500		{object}	models.Error
 // @Failure	404		{object}	models.Error
 // @Failure	409		{object}	models.Error
-// @Router	/api/topics/{id} [get]
+// @Router	/api/messages/topic/{id} [get]
 func (ta *TopicAPI) TopicMassages(c *gin.Context) {
+	uuidMassage, err := uuid.FromString(c.Param("id"))
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
 
-	topicID := c.Param("id")
-	uuidMassage, err := uuid.FromString(topicID)
+	page, limit, err := tools.GetQueryPagination(c)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
 
 	claims, err := tools.ParsTokenClaims(c.Request.Header.Get("Authorization"))
 	if err != nil {
@@ -65,7 +85,7 @@ func (ta *TopicAPI) TopicMassages(c *gin.Context) {
 		return
 	}
 
-	result, err := topicService.TopicMassages(uuidMassage, claims.UserID)
+	result, err := topicService.TopicMassages(uuidMassage, claims.UserID, page, limit)
 	if err != nil {
 		tools.CreateError(http.StatusBadRequest, err, c)
 		log.WithField("component", "rest").Warn(err)
@@ -80,15 +100,15 @@ func (ta *TopicAPI) TopicMassages(c *gin.Context) {
 // @Security ApiKeyAuth
 // @Accept	json
 // @Tags	Topic
-// @Param	topic_id			query		string	true	"id топика"
+// @Param	id		path		string	true	"id топика"
 // @Success	200		{int}		int		200
 // @Failure	400		{object}	models.Error
 // @Failure	500		{object}	models.Error
 // @Failure	404		{object}	models.Error
 // @Failure	409		{object}	models.Error
-// @Router	/api/topics/join [get]
+// @Router	/api/topics/join/{id} [get]
 func (ta *TopicAPI) JoinTopic(c *gin.Context) {
-	topicID := c.Query("topic_id")
+	topicID := c.Param("id")
 
 	claims, err := tools.ParsTokenClaims(c.Request.Header.Get("Authorization"))
 	if err != nil {
@@ -103,7 +123,7 @@ func (ta *TopicAPI) JoinTopic(c *gin.Context) {
 	defer c.Request.Body.Close()
 }
 
-// @Summary	присоединение к топику
+// @Summary	создание топика
 // @Security ApiKeyAuth
 // @Accept	json
 // @Tags	Topic
@@ -114,7 +134,7 @@ func (ta *TopicAPI) JoinTopic(c *gin.Context) {
 // @Failure	500		{object}	models.Error
 // @Failure	404		{object}	models.Error
 // @Failure	409		{object}	models.Error
-// @Router	/api/topics/create [get]
+// @Router	/api/topics [post]
 func (ta *TopicAPI) CreateTopic(c *gin.Context) {
 	var topic models.Topic
 
@@ -133,5 +153,116 @@ func (ta *TopicAPI) CreateTopic(c *gin.Context) {
 	}
 
 	c.JSON(result.Status, result.Message)
+	defer c.Request.Body.Close()
+}
+
+// @Summary	удаление топика
+// @Security ApiKeyAuth
+// @Accept	json
+// @Tags	Topic
+// @Param	id		query		string	true	"id"
+// @Success	200		{string}	string		"топик удален"
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router	/api/topics/{id} [delete]
+func (ta *TopicAPI) DeleteTopic(c *gin.Context) {
+	id := c.Query("id")
+
+	result := topicService.DeleteTopic(id)
+	if result.Err != nil {
+		tools.CreateError(result.Status, result.Err, c)
+		log.WithField("component", "rest").Warn(result.Err)
+		return
+	}
+
+	c.JSON(result.Status, result.Message)
+	defer c.Request.Body.Close()
+}
+
+// @Summary	изменение топика
+// @Security ApiKeyAuth
+// @Accept	json
+// @Tags	Topic
+// @Param	data	query	models.Topic	true 	"заполните указанные поля"
+// @Param	file	formData  	file	false 	"файл"
+// @Success	200		{string}	string		"топик обновлен"
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router	/api/topics/{id} [put]
+func (ta *TopicAPI) ChangeTopic(c *gin.Context) {
+	var topic models.Topic
+	id := c.Query("name")
+
+	pathToLogo, err := tools.MultipartFormDataTopic(&topic, c)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	err = topicService.ChangeTopic(topic, pathToLogo, id)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, "топик удален")
+	defer c.Request.Body.Close()
+}
+
+// @Summary	отображение выбранного топикоа
+// @Security ApiKeyAuth
+// @Accept	json
+// @Tags	Topic
+// @Param	id		path  		string	true 	"id"
+// @Success	200		{object}	models.ResponseTopic
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router	/api/topics/{id} [get]
+func (ta *TopicAPI) GetTopic(c *gin.Context) {
+	topicID := c.Param("id")
+
+	result, err := topicService.GetTopic(topicID)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	c.JSON(http.StatusOK, result)
+	defer c.Request.Body.Close()
+}
+
+// @Summary	удаление пользователя из топмка
+// @Security ApiKeyAuth
+// @Accept	json
+// @Tags	Topic
+// @Param	id		path  		string	true 	"id"
+// @Param	user_id		path  		string	true 	"user_id"
+// @Success	200		{int}		200
+// @Failure	400		{object}	models.Error
+// @Failure	500		{object}	models.Error
+// @Failure	404		{object}	models.Error
+// @Failure	409		{object}	models.Error
+// @Router	/api/topics/{id} [get]
+func (ta *TopicAPI) DeleteUser(c *gin.Context) {
+	userID := c.Param("user_id")
+	topicID := c.Param("id")
+
+	err := topicService.DeleteUser(userID, topicID)
+	if err != nil {
+		tools.CreateError(http.StatusBadRequest, err, c)
+		log.WithField("component", "rest").Warn(err)
+		return
+	}
+
+	c.Status(http.StatusOK)
 	defer c.Request.Body.Close()
 }

@@ -12,11 +12,11 @@ import (
 type MassagesRepo struct {
 }
 
-func NewMassagesRepo () *MassagesRepo {
+func NewMassagesRepo() *MassagesRepo {
 	return &MassagesRepo{}
 }
 
-func (mr *MassagesRepo) PostMassage(massage domain.Massage) tools.UserResult {
+func (mr *MassagesRepo) Post(massage domain.Massage) tools.UserResult {
 
 	err := config.DB.
 		Create(&massage).
@@ -190,3 +190,20 @@ func (mr *MassagesRepo) CreateLike(like domain.Like) error {
 	return err
 }
 
+func (mr *MassagesRepo) Delete(massageID string, claims tools.Claims) error {
+
+	if claims.UserPerm == 3 {
+		err := config.DB.
+			Where("id =?", massageID).
+			Delete(&domain.Massage{}).
+			Error
+		return err
+	}
+
+	err := config.DB.
+		Where("id =? AND user_id =?", massageID, claims.UserID).
+		Delete(&domain.Massage{}).
+		Error
+
+	return err
+}

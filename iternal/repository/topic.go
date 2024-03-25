@@ -15,13 +15,16 @@ func NewTopicRepo() *TopicRepo {
 	return &TopicRepo{}
 }
 
-func (tr *TopicRepo) Topics() ([]domain.Topic, error) {
+func (tr *TopicRepo) GetTopics(skip, limit int) ([]domain.Topic, error) {
 	var topic []domain.Topic
 
 	err := config.DB.
-		Order("created-at").
-		Preloads("Users").
+		Model(&domain.Topic{}).
+		Preload("Users").
+		Limit(limit).
+		Offset(skip).
 		Find(&topic).
+		Order("created-at").
 		Error
 
 	if err != nil {
@@ -31,12 +34,31 @@ func (tr *TopicRepo) Topics() ([]domain.Topic, error) {
 	return topic, err
 }
 
-func (tr *TopicRepo) TopicMassages(topicID uuid.UUID) (domain.Topic, error) {
+func (tr *TopicRepo) GetTopic(topicID string) (domain.Topic, error) {
+	var topic domain.Topic
+
+	err := config.DB.
+		Model(&domain.Topic{}).
+		Where("id =?", topicID).
+		Preload("Users").
+		First(&topic).
+		Error
+
+	if err != nil {
+		return domain.Topic{}, err
+	}
+
+	return topic, err
+}
+
+func (tr *TopicRepo) TopicMassages(topicID uuid.UUID, skip, limit int) (domain.Topic, error) {
 	var topic domain.Topic
 
 	err := config.DB.
 		Model(&domain.Topic{}).
 		Order("created-at").
+		Limit(limit).
+		Offset(skip).
 		Preload("Massages", "topic_id IN (?)", topicID).
 		Preload("Massages.Likes").
 		Preload("Massages.DizLikes").
@@ -124,4 +146,77 @@ func (tr *TopicRepo) FindUserInTopic(topicID uuid.UUID, userID uuid.UUID) error 
 		Error
 
 	return err
+}
+
+func (tr *TopicRepo) DeleteTopic(id uuid.UUID) tools.UserResult {
+
+	err := tr.FindTopic("id", id.String())
+	if err != nil {
+		return tools.UserResult{
+			Err:     nil,
+			Message: "такой топик не существует",
+			Status:  http.StatusBadRequest,
+		}
+	}
+	err = config.DB.
+		Where("id =?", id).
+		Delete(&domain.Topic{}).
+		Error
+
+	if err != nil {
+		return tools.UserResult{
+			Err:    err,
+			Status: http.StatusBadRequest,
+		}
+	}
+
+	return tools.UserResult{
+		Message: "топик удален",
+		Status:  http.StatusCreated,
+	}
+}
+
+func (tr *TopicRepo) ChangeTopic(topic domain.Topic) error {
+
+	err := config.DB.
+		Model(&topic).
+		Updates(topic).
+		Error
+
+	if err != nil {
+		return err
+	}
+
+	return nil
+}
+
+func (tr *TopicRepo) DeleteUser(userID, topicID string) error {
+	var user domain.User
+	var topic domain.Topic
+
+	err := config.DB.
+		Where("id=?", userID).
+		First(&user).
+		Error
+	if err != nil {
+		return err
+	}
+
+	err = config.DB.
+		Where("id=?", topicID).
+		First(&topic).
+		Error
+	if err != nil {
+		return err
+	}
+
+	if err := config.DB.
+		Model(&user).
+		Association("Topics").
+		Delete(&topic).
+		Error; err != nil {
+		return err
+	}
+
+	return nil
 }

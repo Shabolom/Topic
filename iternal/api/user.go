@@ -166,7 +166,7 @@ func (ua *UserApi) ChangeStatus(c *gin.Context) {
 // @Failure	409		{object}	models.Error
 // @Router /api/users/delete [delete]
 func (ua *UserApi) DeleteUser(c *gin.Context) {
-	userID := c.Query("user_id")
+	userID := c.Param("id")
 
 	result := userService.DeleteUser(userID)
 	if result.Err != nil {
