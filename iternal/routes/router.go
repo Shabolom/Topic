@@ -45,9 +45,9 @@ func SetupRouter() *gin.Engine {
 	}
 
 	{
-		authRequiredAdmin.POST("/api/users/status", user.ChangeStatus)
+		authRequiredAdmin.PUT("/api/users/status", user.ChangeStatus)
 		authRequiredAdmin.DELETE("api/users/:id", user.DeleteUser)
-		authRequiredAdmin.POST("api/users/permissions", user.SetPerm)
+		authRequiredAdmin.PUT("api/users/permissions", user.SetPerm)
 		authRequiredAdmin.GET("/api/users/all", user.GetUsers)
 		authRequiredAdmin.GET("/api/users/:id", user.GetUser)
 
