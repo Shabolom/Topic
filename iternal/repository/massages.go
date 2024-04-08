@@ -54,7 +54,7 @@ func (mr *MassagesRepo) TopicMassages(topicID uuid.UUID) (domain.Topic, error) {
 	return topic, err
 }
 
-func (mr *MassagesRepo) FindUserInTopic(topicID uuid.UUID, userID uuid.UUID) error {
+func (mr *MassagesRepo) FindUserInTopic(topicID uuid.UUID) error {
 	var topic domain.Topic
 
 	err := config.DB.

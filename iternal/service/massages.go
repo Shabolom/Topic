@@ -40,7 +40,7 @@ func (sm *ServiceMassages) Post(massage models.Massage, massPaths []string, clai
 func (sm *ServiceMassages) TopicMassages(topicID uuid.UUID, userID uuid.UUID) ([]models.RespMassage, error) {
 	var respMassages []models.RespMassage
 
-	err := massageRepo.FindUserInTopic(topicID, userID)
+	err := massageRepo.FindUserInTopic(topicID)
 	if err != nil {
 		return []models.RespMassage{}, err
 	}

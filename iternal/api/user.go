@@ -63,7 +63,15 @@ func (ua *UserApi) Register(c *gin.Context) {
 		return
 	}
 
-	c.JSON(result.Status, result.Message)
+	if result.Status != 201 {
+		c.JSON(result.Status, result.Message)
+		return
+	}
+
+	c.JSON(result.Status, models.RespLogin{
+		UserID:   result.Result.ID.String(),
+		UserName: result.Result.Login,
+	})
 	defer c.Request.Body.Close()
 }
 
